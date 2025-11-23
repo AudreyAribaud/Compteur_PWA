@@ -441,6 +441,9 @@
                 <div class="home-icon">🃏</div>
                 <span>Yu-Gi-Oh Counter</span>
             </div>
+
+            <button id="install-btn" class="btn"
+                style="display: none; margin-top: 20px; width: 100%; max-width: 400px;">Install App 📲</button>
         </div>
 
         <!-- Chess Timer View -->
@@ -551,6 +554,26 @@
             navigator.serviceWorker.register('./sw.js')
                 .then(() => console.log('Service Worker Registered'));
         }
+
+        // PWA Install Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+            }
+        });
 
         // Navigation Logic
         function switchView(viewName) {
