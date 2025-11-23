@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MultiTimer PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#16213e">
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --accent-color: #e94560;
+            --secondary-color: #0f3460;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Main Content Area */
+        main {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .view.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        /* Home View Styles */
+        #home-view {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 40px;
+        }
+
+        .home-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 20px;
+            font-size: 1.5rem;
+            color: white;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s, background 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .home-card:active {
+            transform: scale(0.98);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .home-icon {
+            font-size: 2.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        /* Back Button */
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .back-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Common Button Styles */
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(233, 69, 96, 0.4);
+        }
+
+        /* Chess Timer Styles */
+        #chess-view {
+            flex-direction: column;
+            padding: 0;
+        }
+
+        .chess-clock {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            font-weight: bold;
+            background-color: var(--secondary-color);
+            transition: background-color 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .chess-clock.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .chess-clock.inactive {
+            background-color: #16213e;
+            color: #555;
+        }
+
+        .chess-clock.rotated {
+            transform: rotate(180deg);
+        }
+
+        .chess-controls {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Pomodoro Styles */
+        .timer-display {
+            font-size: 6rem;
+            font-weight: bold;
+            margin: 30px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pomo-status {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+        }
+
+        /* Yu-Gi-Oh Styles */
+        .ygo-player {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .ygo-player:last-child {
+            border-bottom: none;
+        }
+
+        .lp-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin: 10px 0;
+        }
+
+        .lp-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .lp-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .lp-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .ygo-tools {
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            z-index: 10;
+        }
+
+        .tool-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            align-items: center;
+        }
+
+        .calc-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            font-size: 2rem;
+            text-align: right;
+            border-radius: 10px;
+            font-family: monospace;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+
+        .calc-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 15px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .calc-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .result-display {
+            font-size: 4rem;
+            margin: 20px 0;
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0% {
+                transform: translate(1px, 1px) rotate(0deg);
+            }
+
+            10% {
+                transform: translate(-1px, -2px) rotate(-1deg);
+            }
+
+            20% {
+                transform: translate(-3px, 0px) rotate(1deg);
+            }
+
+            30% {
+                transform: translate(3px, 2px) rotate(0deg);
+            }
+
+            40% {
+                transform: translate(1px, -1px) rotate(1deg);
+            }
+
+            50% {
+                transform: translate(-1px, 2px) rotate(-1deg);
+            }
+
+            60% {
+                transform: translate(-3px, 1px) rotate(0deg);
+            }
+
+            70% {
+                transform: translate(3px, 1px) rotate(-1deg);
+            }
+
+            80% {
+                transform: translate(-1px, -1px) rotate(1deg);
+            }
+
+            90% {
+                transform: translate(1px, 2px) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(1px, -2px) rotate(-1deg);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotateY(0deg);
+            }
+
+            100% {
+                transform: rotateY(1800deg);
+            }
+        }
+
+        .shake-anim {
+            animation: shake 0.5s;
+            animation-iteration-count: 2;
+        }
+
+        .spin-anim {
+            animation: spin 1s ease-out;
+            transform-style: preserve-3d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <main>
+        <!-- Home View -->
+        <div id="home-view" class="view active">
+            <h1 style="text-align: center; font-size: 2.5rem; margin-bottom: 40px;">MultiTimer</h1>
+
+            <div class="home-card" onclick="switchView('chess')">
+                <div class="home-icon">♟️</div>
+                <span>Chess Timer</span>
+            </div>
+
+            <div class="home-card" onclick="switchView('pomodoro')">
+                <div class="home-icon">🍅</div>
+                <span>Pomodoro</span>
+            </div>
+
+            <div class="home-card" onclick="switchView('ygo')">
+                <div class="home-icon">🃏</div>
+                <span>Yu-Gi-Oh Counter</span>
+            </div>
+        </div>
+
+        <!-- Chess Timer View -->
+        <div id="chess-view" class="view">
+            <button class="back-btn" onclick="switchView('home')">←</button>
+            <div id="player1-clock" class="chess-clock rotated inactive" onclick="handleChessClick(1)">
+                10:00
+            </div>
+            <div class="chess-controls">
+                <button class="btn" onclick="resetChess()">Reset</button>
+                <button class="btn" onclick="pauseChess()">Pause</button>
+            </div>
+            <div id="player2-clock" class="chess-clock inactive" onclick="handleChessClick(2)">
+                10:00
+            </div>
+        </div>
+
+        <!-- Pomodoro View -->
+        <div id="pomodoro-view" class="view">
+            <button class="back-btn" onclick="switchView('home')">←</button>
+            <h1>Pomodoro</h1>
+            <div class="pomo-status" id="pomo-status">Focus Time</div>
+            <div class="timer-display" id="pomo-timer">25:00</div>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn" onclick="togglePomo()">Start</button>
+                <button class="btn" onclick="resetPomo()">Reset</button>
+                <button class="btn" onclick="setPomoBreak()">Break (5m)</button>
+            </div>
+        </div>
+
+        <!-- Yu-Gi-Oh View -->
+        <div id="ygo-view" class="view">
+            <button class="back-btn" onclick="switchView('home')">←</button>
+
+
+
+            <div class="ygo-player" style="transform: rotate(180deg);">
+                <h2>Player 2</h2>
+                <div class="lp-display" id="p2-lp">8000</div>
+                <div class="lp-controls">
+                    <button class="lp-btn" onclick="modLP(2, -1000)">-1000</button>
+                    <button class="lp-btn" onclick="modLP(2, -500)">-500</button>
+                    <button class="lp-btn" onclick="modLP(2, -100)">-100</button>
+                    <button class="lp-btn" onclick="modLP(2, 1000)">+1000</button>
+                    <button class="lp-btn" onclick="modLP(2, 500)">+500</button>
+                    <button class="lp-btn" onclick="openCalc(2)">Custom</button>
+                </div>
+            </div>
+
+            <div class="ygo-tools">
+                <button class="tool-btn" onclick="rollDice()">🎲</button>
+                <button class="tool-btn" onclick="flipCoin()">🪙</button>
+                <button class="tool-btn" onclick="resetYGO()">↺</button>
+            </div>
+
+            <div class="ygo-player">
+                <h2>Player 1</h2>
+                <div class="lp-display" id="p1-lp">8000</div>
+                <div class="lp-controls">
+                    <button class="lp-btn" onclick="modLP(1, -1000)">-1000</button>
+                    <button class="lp-btn" onclick="modLP(1, -500)">-500</button>
+                    <button class="lp-btn" onclick="modLP(1, -100)">-100</button>
+                    <button class="lp-btn" onclick="modLP(1, 1000)">+1000</button>
+                    <button class="lp-btn" onclick="modLP(1, 500)">+500</button>
+                    <button class="lp-btn" onclick="openCalc(1)">Custom</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Calculator Modal -->
+    <div id="calc-modal" class="modal">
+        <div class="modal-content">
+            <div class="calc-display" id="calc-display">0</div>
+            <div class="calc-grid">
+                <button class="calc-btn" onclick="calcInput(7)">7</button>
+                <button class="calc-btn" onclick="calcInput(8)">8</button>
+                <button class="calc-btn" onclick="calcInput(9)">9</button>
+                <button class="calc-btn" onclick="calcInput(4)">4</button>
+                <button class="calc-btn" onclick="calcInput(5)">5</button>
+                <button class="calc-btn" onclick="calcInput(6)">6</button>
+                <button class="calc-btn" onclick="calcInput(1)">1</button>
+                <button class="calc-btn" onclick="calcInput(2)">2</button>
+                <button class="calc-btn" onclick="calcInput(3)">3</button>
+                <button class="calc-btn" onclick="calcInput(0)">0</button>
+                <button class="calc-btn" onclick="calcClear()">C</button>
+                <button class="calc-btn" onclick="closeCalc()">Back</button>
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button class="btn" style="flex:1; background: #e94560;" onclick="calcApply(-1)">Subtract</button>
+                <button class="btn" style="flex:1; background: #4caf50;" onclick="calcApply(1)">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal (Dice/Coin) -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="result-title">Result</h2>
+            <div class="result-display" id="result-value">?</div>
+            <button class="btn" onclick="closeResult()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('Service Worker Registered'));
+        }
+
+        // Navigation Logic
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${viewName}-view`).classList.add('active');
+        }
+
+        // --- Chess Timer Logic ---
+        let chessTime = 10 * 60;
+        let p1Time = chessTime;
+        let p2Time = chessTime;
+        let activePlayer = null;
+        let chessInterval = null;
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateChessUI() {
+            document.getElementById('player1-clock').textContent = formatTime(p1Time);
+            document.getElementById('player2-clock').textContent = formatTime(p2Time);
+
+            document.getElementById('player1-clock').className = `chess-clock rotated ${activePlayer === 1 ? 'active' : 'inactive'}`;
+            document.getElementById('player2-clock').className = `chess-clock ${activePlayer === 2 ? 'active' : 'inactive'}`;
+        }
+
+        function handleChessClick(player) {
+            if (activePlayer === null) {
+                activePlayer = player === 1 ? 2 : 1;
+                startChessTimer();
+            } else if (activePlayer === player) {
+                activePlayer = player === 1 ? 2 : 1;
+            }
+            updateChessUI();
+        }
+
+        function startChessTimer() {
+            if (chessInterval) clearInterval(chessInterval);
+            chessInterval = setInterval(() => {
+                if (activePlayer === 1) {
+                    p1Time--;
+                    if (p1Time <= 0) endGame(2);
+                } else {
+                    p2Time--;
+                    if (p2Time <= 0) endGame(1);
+                }
+                updateChessUI();
+            }, 1000);
+        }
+
+        function pauseChess() {
+            clearInterval(chessInterval);
+            chessInterval = null;
+        }
+
+        function resetChess() {
+            pauseChess();
+            p1Time = chessTime;
+            p2Time = chessTime;
+            activePlayer = null;
+            updateChessUI();
+        }
+
+        function endGame(winner) {
+            pauseChess();
+            alert(`Player ${winner} wins on time!`);
+        }
+
+
+        // --- Pomodoro Logic ---
+        let pomoTime = 25 * 60;
+        let isWork = true;
+        let pomoInterval = null;
+        let isPomoRunning = false;
+
+        function updatePomoUI() {
+            document.getElementById('pomo-timer').textContent = formatTime(pomoTime);
+            document.getElementById('pomo-status').textContent = isWork ? "Focus Time" : "Break Time";
+        }
+
+        function togglePomo() {
+            if (isPomoRunning) {
+                clearInterval(pomoInterval);
+                isPomoRunning = false;
+                event.target.textContent = "Start";
+            } else {
+                pomoInterval = setInterval(() => {
+                    pomoTime--;
+                    if (pomoTime <= 0) {
+                        clearInterval(pomoInterval);
+                        isPomoRunning = false;
+                        isWork = !isWork;
+                        pomoTime = isWork ? 25 * 60 : 5 * 60;
+                        if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+                        alert(isWork ? "Break over! Back to work." : "Work done! Take a break.");
+                        document.querySelector('#pomodoro-view .btn').textContent = "Start";
+                    }
+                    updatePomoUI();
+                }, 1000);
+                isPomoRunning = true;
+                event.target.textContent = "Pause";
+            }
+        }
+
+        function resetPomo() {
+            clearInterval(pomoInterval);
+            isPomoRunning = false;
+            isWork = true;
+            pomoTime = 25 * 60;
+            updatePomoUI();
+            document.querySelector('#pomodoro-view .btn').textContent = "Start";
+        }
+
+        function setPomoBreak() {
+            clearInterval(pomoInterval);
+            isPomoRunning = false;
+            isWork = false;
+            pomoTime = 5 * 60;
+            updatePomoUI();
+            document.querySelector('#pomodoro-view .btn').textContent = "Start";
+        }
+
+
+        // --- Yu-Gi-Oh Logic ---
+        let p1LP = 8000;
+        let p2LP = 8000;
+        let calcValue = "0";
+        let calcPlayer = 1;
+
+        function updateYGOUI() {
+            document.getElementById('p1-lp').textContent = p1LP;
+            document.getElementById('p2-lp').textContent = p2LP;
+        }
+
+        function modLP(player, amount) {
+            if (player === 1) {
+                p1LP += amount;
+                if (p1LP < 0) p1LP = 0;
+            } else {
+                p2LP += amount;
+                if (p2LP < 0) p2LP = 0;
+            }
+            updateYGOUI();
+        }
+
+        function resetYGO() {
+            if (confirm("Reset Life Points to 8000?")) {
+                p1LP = 8000;
+                p2LP = 8000;
+                updateYGOUI();
+            }
+        }
+
+        // --- Calculator Logic ---
+        function openCalc(player) {
+            calcPlayer = player;
+            calcValue = "0";
+            document.getElementById('calc-display').textContent = calcValue;
+            document.getElementById('calc-modal').classList.add('active');
+        }
+
+        function closeCalc() {
+            document.getElementById('calc-modal').classList.remove('active');
+        }
+
+        function calcInput(num) {
+            if (calcValue === "0") calcValue = num.toString();
+            else if (calcValue.length < 6) calcValue += num;
+            document.getElementById('calc-display').textContent = calcValue;
+        }
+
+        function calcClear() {
+            calcValue = "0";
+            document.getElementById('calc-display').textContent = calcValue;
+        }
+
+        function calcApply(multiplier) {
+            const amount = parseInt(calcValue) * multiplier;
+            modLP(calcPlayer, amount);
+            closeCalc();
+        }
+
+        // --- Dice & Coin Logic ---
+        function rollDice() {
+            const resultDisplay = document.getElementById('result-value');
+            document.getElementById('result-title').textContent = "Rolling...";
+            resultDisplay.textContent = "🎲";
+            resultDisplay.className = "result-display shake-anim";
+            document.getElementById('result-modal').classList.add('active');
+
+            setTimeout(() => {
+                const result = Math.floor(Math.random() * 6) + 1;
+                resultDisplay.className = "result-display";
+                document.getElementById('result-title').textContent = "Dice Roll";
+                resultDisplay.textContent = result;
+            }, 1000);
+        }
+
+        function flipCoin() {
+            const resultDisplay = document.getElementById('result-value');
+            document.getElementById('result-title').textContent = "Flipping...";
+            // Show a placeholder or the 'heads' image spinning
+            resultDisplay.innerHTML = `<img src="coin_heads.png" style="width: 150px; height: 150px; border-radius: 50%; box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);">`;
+            resultDisplay.className = "result-display spin-anim";
+            document.getElementById('result-modal').classList.add('active');
+
+            setTimeout(() => {
+                const isHeads = Math.random() < 0.5;
+                const result = isHeads ? "Heads" : "Tails";
+                const imgPath = isHeads ? "coin_heads.png" : "coin_tails.png";
+
+                resultDisplay.className = "result-display";
+                document.getElementById('result-title').textContent = "Coin Flip";
+                resultDisplay.innerHTML = `<img src="${imgPath}" alt="${result}" style="width: 150px; height: 150px; border-radius: 50%; box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);">`;
+            }, 1000);
+        }
+
+        function closeResult() {
+            document.getElementById('result-modal').classList.remove('active');
+            // Reset classes
+            document.getElementById('result-value').className = "result-display";
+        }
+
+    </script>
+</body>
+
+</html>
